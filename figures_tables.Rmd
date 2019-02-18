@@ -1,0 +1,135 @@
+---
+title: "figures and tables"
+author: "Camila Vargas"
+date: "17 de febrero de 2019"
+output: pdf_document
+---
+## Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(here)
+library(plotrix)
+library(RColorBrewer)
+library(cowplot)
+
+
+raw_data <- read_excel(here("data/vargas_gender_data.xlsx"), range ="A1:AG116") %>% 
+  mutate(activities = as.numeric(activities),
+         conflict = as.numeric(conflict))
+
+```
+
+
+
+Based on the analysis done in the file GENDER.R we concluded that there are significant diferences among groups in attributes such as:
+- Leadership
+- Entrepreneurship
+- Participation in Activities
+
+Non-significant differences
+- Trust
+- Norms
+- Interaction with Community
+
+
+Here I'm going to create the figures that reflect these results.
+
+```{r}
+##Figure 4 average degree in which pariticipants percieve group attributes.
+
+##calcualting mean, sd and se
+assoc_scale_summary <- raw_data %>% 
+  select("Type of Association"= type_organization, Leadership = leadership, Entrepreneurship = entrepreneurship, "Participation in events" = activities, Trust = trust, "Norm complience" = norms, "Community engagement" = community) %>% 
+  gather(key = attribute, value = value, 2:7) %>% 
+  group_by(`Type of Association`, attribute) %>% 
+  group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
+  summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)"))
+  
+
+#plot
+##MISING: order the facet wrap in the order I want (with significant diff and no significant diff). Possible approach: creat to figurs and then join them in two panels A and B with cowplot
+
+
+signficant_diff <- ggplot(assoc_scale_summary %>% 
+                              filter(attribute %in% c("Leadership", "Entrepreneurship","Community engagement")),
+                            aes(`Type of Association`, mean)) +
+   geom_bar(aes(fill=`Type of Association`), stat = "identity") +
+  geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  geom_hline(yintercept = 10, linetype = "dotted")+
+  theme_classic() +
+  facet_wrap(~attribute) +
+  scale_fill_brewer(palette = "Blues")+ #find a good color
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position="none", 
+        legend.box = "horizontal")
+
+no_diff <- ggplot(assoc_scale_summary %>% 
+                              filter(attribute %in% c("Norm complience", "Participation in events","Trust")),
+  aes(`Type of Association`, mean)) +
+   geom_bar(aes(fill=`Type of Association`), stat = "identity") +
+  geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  geom_hline(yintercept = 10, linetype = "dotted")+
+  theme_classic() +
+  facet_wrap(~attribute) +
+  scale_fill_brewer(palette = "Blues")+ #find a good color
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position="bottom", 
+        legend.box = "horizontal")
+
+
+plot_grid(signficant_diff, no_diff, labels = c("A", "B"), nrow = 2, align = "v")
+
+
+```
+
+
+```{r}
+#Figure 5: Average degree in which groups evaluate social performance indicators
+
+
+soc_perform_summary<- raw_data %>% 
+  select("Type of Association"= type_organization, Efficiency = efficiency, Cooperation = cooperation, "Conflict resolution" = conflict) %>% 
+  gather(key = attribute, value = value, 2:4) %>% 
+  group_by(`Type of Association`, attribute) %>% 
+  group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
+  summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
+  ungroup() %>% 
+  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)"))
+
+
+
+soc_perform_plot<- ggplot(soc_perform_summary, aes(`Type of Association`, mean)) +
+   geom_bar(aes(fill=`Type of Association`), stat = "identity") +
+  geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  geom_hline(yintercept = 10, linetype = "dotted")+ #color = "gray"
+  theme_classic() +
+  facet_wrap(~attribute) +
+  scale_fill_brewer(palette = "Blues")+ #find a good color
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position="bottom", 
+        legend.box = "horizontal") +
+  expand_limits(y = 20) #y-axis goes to up to 20
+
+
+
+
+
+```
+
+
+
