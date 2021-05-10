@@ -1,0 +1,202 @@
+---
+title: "Gender and SSF in Chile Results"
+author: "Camila Vargas"
+date: "12/15/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(readxl) #install.packages('readxl')
+```
+
+## Read data
+```{r}
+social_capital_average <- read_csv(here("data/social_capital_average.csv"))
+
+raw_data <- read_excel(here("data/vargas_gender_data.xlsx"), range ="A1:AG116") %>%  mutate(activities = as.numeric(activities),
+         conflict = as.numeric(conflict)) %>% 
+  left_join(social_capital_average, by= "folio") ##OJO!! social_capital_average
+```
+
+
+## Analysis of socio-demographic data 
+
+
+Fisher's age (average of association)
+```{r}
+
+fishers_age_average <- raw_data %>% 
+  group_by(type_organization) %>% 
+  summarise(mean = mean(age))
+
+##Are there statistical difference?
+anova_age <- aov(age~type_organization, data = raw_data)
+summary(anova_age)
+
+#F=0.961  p = 0.414
+
+```
+
+Own gear
+```{r}
+own_gear <- raw_data %>% 
+  select(type_organization, gear) %>% 
+  group_by(type_organization, gear) %>% 
+  tally() %>% 
+  spread(key = gear, value = n) %>% 
+  mutate(Yes = as.numeric(Yes)) %>% 
+  mutate(No = as.numeric(No)) %>%
+  ungroup() %>% 
+  select(Yes, No)
+
+own_gear <- as.matrix(own_gear)
+
+gear_chi <- chisq.test(own_gear)
+
+gear_chi
+#X-squared = 5.2749, df = 3, p-value = 0.1527
+
+
+gear_men_women <- raw_data %>% 
+  select(gender, gear) %>% 
+  group_by(gender, gear) %>% 
+  tally() %>% 
+  spread(key = gear, value = n) %>% 
+  mutate(Yes = as.numeric(Yes)) %>% 
+  mutate(No = as.numeric(No)) %>%
+  ungroup() %>% 
+  select(Yes, No)
+
+gear_men_weomen_chi <- chisq.test(gear_men_women)
+#X-squared = 3.5441, df = 1, p-value = 0.05976
+
+
+```
+
+Education
+```{r}
+education_men_women <- raw_data %>% 
+  select(gender, education) %>% 
+  group_by(gender, education) %>% 
+  tally() %>% 
+  spread(key = education, value = n)
+
+```
+
+
+
+Complete primary school
+Complete high school
+Complete higher education
+
+A3. History of Use
+Average years RPA
+
+A8. Importance of resource
+Marine resources primary source of income 
+
+```{r}
+livelihood <- raw_data %>% 
+  select(type_organization, income_marine_res) %>% 
+  group_by(type_organization, income_marine_res) %>% 
+  tally() %>% 
+  spread(key = income_marine_res, value = n) %>% 
+  mutate(Yes = as.numeric(Yes)) %>% 
+  mutate(No = as.numeric(No)) %>%
+  ungroup() %>% 
+  select(Yes, No)
+
+
+
+livelihood_chi <- chisq.test(livelihood)
+
+livelihood_chi
+#X-squared = 20.314, df = 3, p-value = 0.0001461
+
+livelihood_men_women <- raw_data %>% 
+  select(gender, income_marine_res) %>% 
+  group_by(gender, income_marine_res) %>% 
+  tally() %>% 
+  spread(key = income_marine_res, value = n) %>% 
+  mutate(Yes = as.numeric(Yes)) %>% 
+  mutate(No = as.numeric(No)) %>%
+  ungroup() %>% 
+  select(Yes, No)
+
+livelihood_men_weomen_chi <- chisq.test(livelihood_men_women)
+
+livelihood_men_weomen_chi
+
+```
+
+
+
+Association scale
+A1. Number of users
+Average group size (Number of participants) 
+
+A3. History of Use
+Average age of associations 
+
+```{r}
+association_age <- read_csv(here::here("data/association_age.csv")) 
+
+average_age_assoc <- association_age %>% 
+  group_by(type_organization) %>% 
+  summarise(average_age = mean(age_association))
+
+shapiro.test(association_age$age_association)  
+##W = 0.93563, p-value = 0.1447 NORMAL
+
+anova_age_assoc <- aov(age_association~type_organization, data = association_age)
+summary(anova_age_assoc)
+
+#  Df Sum Sq Mean Sq                     F value Pr(>F)  
+# type_organization  3   1351   450.5   4.463 0.0156 * SIGNIFICANT
+# Residuals         19   1918   100.9 
+
+#Pst-hoc Tukey Age association
+pst_hoc_age_assoc <- TukeyHSD(anova_age_assoc, "type_organization")
+pst_hoc_age_assoc
+
+# $type_organization
+#                       diff       lwr        upr     p adj
+# Mixed-M-Men      -7.266667 -24.37311  9.8397740 0.6375913 No
+# Mixed-W-Men     -16.600000 -33.70644  0.5064406 0.0590662 No
+# Women-Men       -19.933333 -37.03977 -2.8268927 0.0190074 *
+# Mixed-W-Mixed-M  -9.333333 -25.64368  6.9770178 0.3973643 NO
+# Women-Mixed-M   -12.666667 -28.97702  3.6436845 0.1636825 NO
+# Women-Mixed-W    -3.333333 -19.64368 12.9770178 0.9384483 NO
+
+
+
+
+
+```
+
+
+Table 1
+```{r indicator description, echo = FALSE, message= FALSE, warning= FALSE}
+
+##import data
+indicator_description <- read_csv(here("data/indicators_description.csv"))
+
+options(knitr.table.format = "latex")
+options(knitr.kable.NA = '') ## remove NA
+
+knitr::kable(indicator_description, 
+             col.names = c("Diagnostic framework component", "Indicator", "Description"), 
+             #format.args = list(decimal.mark = '.', big.mark = ","),"latex", 
+             booktabs = T, 
+             caption= 'Description of indicators evaluated in our study regarding each of the selected variables, under two components of the SES framework') %>% 
+kable_styling(latex_options = 'hold_position') %>% 
+# column_spec(3, width = "3cm")# wraps text
+
+
+
+```
+

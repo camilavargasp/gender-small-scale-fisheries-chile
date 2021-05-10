@@ -1,5 +1,6 @@
 ---
-title: "figures and tables"
+title: "Figures and Tables Vargas et al"
+subtitle: "Not published"
 author: "Camila Vargas"
 date: "17 de febrero de 2019"
 output: pdf_document
@@ -14,57 +15,198 @@ library(readxl)
 library(here)
 library(plotrix)
 library(RColorBrewer)
-library(cowplot)
+library(cowplot) #theme_set(theme_cowplot())
+library(ggrepel)
+library(scales)
+library(knitr)
+library(kableExtra)
 
 
-raw_data <- read_excel(here("data/vargas_gender_data.xlsx"), range ="A1:AG116") %>% 
-  mutate(activities = as.numeric(activities),
-         conflict = as.numeric(conflict))
+# my_palette <-  c(brewer.pal(9, "Blues")[c(2,4,6,8)])
+# my_palette_2 <- c(brewer.pal(9, "GnBu")[c(4,5,6,7)])
+my_palette_3 <- c(brewer.pal(9, "Blues")[3], brewer.pal(9, "GnBu")[c(5,6,7)])
+#my_palette_3:
+#"#7BCCC4" verde
+#"#4EB3D3" azul mar
+#"#2B8CBE" azul oscuro
+#"#C6DBEF" celeste
 
 ```
 
 
+# Methods
 
-Based on the analysis done in the file GENDER.R we concluded that there are significant diferences among groups in attributes such as:
-- Leadership
-- Entrepreneurship
-- Participation in Activities
+Figure 1
 
-Non-significant differences
-- Trust
-- Norms
-- Interaction with Community
+```{r Women participation in ssf in Chile, echo = FALSE, warning=FALSE, message=FALSE, fig.cap= 'Women participation in small-scale fisheires in Chile. A) Percentage of women officially registered in the National Fisheries Service (RPA) through time.  B) Number of mixed gender, only-women and only men associations oficially registered per year.Data source: SERNAPESCA, 2017.'}
+
+##Percentage of women in ssf from 2004 to 2016
+
+rpa_yearly_women <- read.csv(here("data/women_men_ssf_chile_yearly.csv")) %>% select(year, pct_women) %>% 
+  filter(year == 2004:2016)
+  
+pct_women_plot <- ggplot(rpa_yearly_women, aes(x= year, y= pct_women/100))+
+  geom_line(color = "#7BCCC4", size = 1.5)+
+  theme_classic()+
+  scale_x_continuous(breaks = seq(2004, 2016, 1))+
+  scale_y_continuous(labels=scales::percent)+
+  xlab("Year")+
+  ylab("Percentage of women")+
+  theme(axis.title = element_text(size = 10, face = "bold"))
+  
+#plot(pct_women_plot)
 
 
-Here I'm going to create the figures that reflect these results.
+##RPA Associations by gender
 
-```{r}
-##Figure 4 average degree in which pariticipants percieve group attributes.
+rpa_association <- read.csv(here("data/rpa_associations_yearly.csv")) %>% 
+  select(-total) %>% 
+  gather(key = Gender, value = number, 2:4) %>% 
+  mutate(Gender = fct_relevel(Gender,"Women", "Men", "Mixed")) %>% 
+  filter(year!=2017)
+
+association_plot <- ggplot(rpa_association)+
+  geom_bar(aes(x= year, y= number, fill = Gender), stat = "identity")+
+  theme_classic()+
+  scale_fill_manual(values = c("#7BCCC4", "#C6DBEF","#4EB3D3"))+ #2B8CBE
+  labs(y= "Number of associations", x="Year")+
+  scale_x_continuous(breaks = seq(2004, 2016, 1))+
+  theme(axis.title = element_text(size = 10, face = "bold"),
+         legend.position="bottom", 
+        legend.box = "horizontal")
+        #axis.text.x = element_text(angle = 30))
+
+##axis.text.x = element_text(size = 10, color = "black")
+
+#plot(association_plot)
+
+title_figure_method <- ggdraw() + draw_label("Women Participation in Small-scale Fisheries in Chile", fontface='bold')
+
+figure_method <- plot_grid(pct_women_plot,association_plot, labels = c("A", "B"), nrow= 2 , align = "v")
+
+#plot(figure_method)
+
+
+figure_method_title <- plot_grid(title_figure_method, figure_method, ncol=1, rel_heights=c(0.1, 1)) # rel_heights values control title margins
+  #draw_label("Data Source: SERNAPESCA, 2017", size = 9, fontface = "italic", x=0.87, y=0.03)
+
+plot(figure_method_title)
+
+##ggplot2::ggsave("women_ssf_chile.png", plot = figure_method_title)
+
+
+##Activity Men and women
+
+fishers_activity_2016 <- read_csv(here("data/fishers_activity_rpa.csv"))%>%
+   filter(year == 2016) %>% 
+  group_by(gender) %>% 
+  mutate(total_gender = sum(number)) %>% 
+  ungroup() %>% 
+  mutate(pct_per_gender = (number/total_gender)*100) %>% 
+  mutate(Activity = ifelse(Activity=="Gleaner", "Shore gatherer", Activity))
+ 
+
+
+fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
+  geom_bar(aes(x= gender, 
+               y= pct_per_gender/100, 
+               fill = Activity),
+           stat = "identity",
+           width = 0.6)+
+  theme_classic()+
+  scale_y_continuous(labels=scales::percent)+
+  coord_flip()+
+  scale_fill_manual(values = c("#C6DBEF", "#7BCCC4", "#4EB3D3", "#2B8CBE"))+
+  scale_x_discrete(labels=c("Men (n = 121,634)", "Women (n = 29,952)"))+
+  ylab("Percentage of RPA")+
+  ggtitle("Percentage of men and women's registers in each fishery activity")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(size = 10, color = "black"),
+        axis.text.y = element_text(size = 10, color = "black"))
+
+fishers_activity_legend <- ggdraw(fishers_activity_16_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.87, y=0.02)
+
+
+plot(fishers_activity_16_plot)
+
+
+
+```
+
+
+# Results
+
+```{r import data, echo = FALSE, message= FALSE, warning= FALSE}
+## Import data
+social_capital_average <- read_csv(here("data/social_capital_average.csv"))
+
+raw_data <- read_excel(here("data/vargas_gender_data.xlsx"), range ="A1:AG116") %>%  mutate(activities = as.numeric(activities),
+         conflict = as.numeric(conflict)) %>% 
+  left_join(social_capital_average, by= "folio") ##OJO!! social_capital_average
+
+# Based on the analysis done in the file GENDER.R we concluded that there are significant diferences among groups in attributes such as:
+# - Leadership
+# - Entrepreneurship
+# - Participation in Activities
+# 
+# Non-significant differences
+# - Trust
+# - Norms
+# - Social Capital
+
+##Based on social_capital_analysis.Rmd
+#Non-significat difference
+#Social capital
+
+```
+
+Fig caption: Results from Kruskal-Wallis test showed significant differences in Leadership "(p= 0.0005)", Entrepreneurship "(p=0.002)", Participation in Activities "(p=<0.0001)", but not in Trust "(p=0.245)", Norm accomplishments "(p=0.272)", Social Capital "(p=0.08)". Letters on the top of the bars represent Dunn’s posteriori tests' results.
+
+```{r association level vriables,  echo = FALSE, warning=FALSE, message=FALSE, fig.cap= 'Average degree in which groups perceive association-level variables relevant for collective action. Scores go from 0 (nothing at all) to 20 (very much).'}
+
+
+## Average degree in which pariticipants percieve group attributes.
 
 ##calcualting mean, sd and se
 assoc_scale_summary <- raw_data %>% 
-  select("Type of Association"= type_organization, Leadership = leadership, Entrepreneurship = entrepreneurship, "Participation in events" = activities, Trust = trust, "Norm complience" = norms, "Community engagement" = community) %>% 
+  select("Type of Association"= type_organization, Leadership = leadership, Entrepreneurship = entrepreneurship, "Participation in Activities" = activities, Trust = trust, "Norm Compliance" = norms, "Social Capital" = soc_capital) %>% 
   gather(key = attribute, value = value, 2:7) %>% 
   group_by(`Type of Association`, attribute) %>% 
   group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
   summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
   ungroup() %>% 
-  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)"))
+  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)")) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Women (n=30)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "a",NA )) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Men (n=25)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "b",signif_diff)) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Mixed - W (n=29)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "a",signif_diff)) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Mixed - M (n=31)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "ab",signif_diff)) %>% 
+   mutate("Type of Association" = fct_relevel(`Type of Association`, c("Women (n=30)", "Men (n=25)", "Mixed - W (n=29)", "Mixed - M (n=31)")),
+         attribute = fct_relevel(attribute, c("Leadership", "Entrepreneurship", "Participation in Activities", "Trust", "Norm Compliance", "Social Capital")))
+
   
+View(assoc_scale_summary)
 
-#plot
-##MISING: order the facet wrap in the order I want (with significant diff and no significant diff). Possible approach: creat to figurs and then join them in two panels A and B with cowplot
-
+#plot (Social Capital; Entrepreneur; Leadership)
 
 signficant_diff <- ggplot(assoc_scale_summary %>% 
-                              filter(attribute %in% c("Leadership", "Entrepreneurship","Community engagement")),
+                              filter(attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities")),
                             aes(`Type of Association`, mean)) +
    geom_bar(aes(fill=`Type of Association`), stat = "identity") +
   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  geom_text_repel(aes(y=mean+std.error+0.2, label = signif_diff), 
+                  nudge_y = 0.5,
+                  direction = "x",
+                  vjust = 0,
+                  hjust = 0.5,
+                  segment.colour = "transparent")+
   geom_hline(yintercept = 10, linetype = "dotted")+
   theme_classic() +
   facet_wrap(~attribute) +
-  scale_fill_brewer(palette = "Blues")+ #find a good color
+  scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
+  #scale_fill_brewer(palette = "BuGn")+ #find a good color
   theme(panel.grid = element_blank(),
         axis.text.x = element_blank(),
         axis.title.x = element_blank(),
@@ -73,63 +215,201 @@ signficant_diff <- ggplot(assoc_scale_summary %>%
         legend.box = "horizontal")
 
 no_diff <- ggplot(assoc_scale_summary %>% 
-                              filter(attribute %in% c("Norm complience", "Participation in events","Trust")),
+                              filter(attribute %in% c("Norm Compliance", "Social Capital","Trust")),
   aes(`Type of Association`, mean)) +
    geom_bar(aes(fill=`Type of Association`), stat = "identity") +
   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
   geom_hline(yintercept = 10, linetype = "dotted")+
   theme_classic() +
   facet_wrap(~attribute) +
-  scale_fill_brewer(palette = "Blues")+ #find a good color
+  scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
+  #scale_fill_brewer(palette = "BuGn")+ #find a good color
   theme(panel.grid = element_blank(),
         axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.position="bottom", 
-        legend.box = "horizontal")
+        legend.box = "horizontal")+
+  expand_limits(y = 20)
+  #labs(caption = "(Vargas et al, unpublished data)", element_text(face = "italic", size = 7))
 
+##Both plot plotted together
+figure_assoc_att <- plot_grid(signficant_diff, no_diff, labels = c("A", "B"), nrow = 2, align = "v")
 
-plot_grid(signficant_diff, no_diff, labels = c("A", "B"), nrow = 2, align = "v")
+title_figure_assoc_att <-  ggdraw() + draw_label("Perception on association related variables", fontface='bold')
+
+figure_assoc_att_legend <- ggdraw(figure_assoc_att)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+
+figure_assoc_att_title <- plot_grid(title_figure_assoc_att, figure_assoc_att_legend, ncol=1, rel_heights=c(0.1, 1)) # rel_heights values control title margins
+
+plot(figure_assoc_att_title)
 
 
 ```
 
 
-```{r}
-#Figure 5: Average degree in which groups evaluate social performance indicators
+
+
+Fig caption
+Average degree in which groups evaluate social performance indicators: Efficiency (p<0,0001); (Cooperation p=0,002) and (Conflict Resolution p=0,436). Scores go from 0 (nothing at all) to 20 (very much). Significant differences are represented by different letters and analyzed with Kruskal-Wallis test and Dunn’s posteriori tests.
+
+
+```{r  Social performance vriables,  echo = FALSE, warning=FALSE, message=FALSE, fig.cap='hola'}
+#Average degree in which groups evaluate social performance indicators
 
 
 soc_perform_summary<- raw_data %>% 
-  select("Type of Association"= type_organization, Efficiency = efficiency, Cooperation = cooperation, "Conflict resolution" = conflict) %>% 
+  select("Type of Association"= type_organization, Efficiency = efficiency, Cooperation = cooperation, "Conflict Resolution" = conflict) %>% 
   gather(key = attribute, value = value, 2:4) %>% 
   group_by(`Type of Association`, attribute) %>% 
   group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
   summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
   ungroup() %>% 
-  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)"))
-
+  mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)")) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Women (n=30)" & attribute %in% c("Efficiency", "Cooperation"), "a",NA )) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Men (n=25)" & attribute %in% c("Efficiency", "Cooperation"), "b",signif_diff)) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Mixed - W (n=29)" & attribute %in% c("Efficiency", "Cooperation"), "a",signif_diff)) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Mixed - M (n=31)" & attribute == "Cooperation", "ab",signif_diff)) %>% 
+  mutate(signif_diff = ifelse(`Type of Association` == "Mixed - M (n=31)" & attribute == "Efficiency", "a",signif_diff)) %>% 
+  mutate("Type of Association" = fct_relevel(`Type of Association`, c("Women (n=30)", "Men (n=25)", "Mixed - W (n=29)", "Mixed - M (n=31)")),
+         attribute = fct_relevel(attribute, c("Efficiency", "Cooperation", "Conflict Resolution")))
+  
+View(soc_perform_summary)
 
 
 soc_perform_plot<- ggplot(soc_perform_summary, aes(`Type of Association`, mean)) +
    geom_bar(aes(fill=`Type of Association`), stat = "identity") +
   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  geom_text_repel(aes(y=mean+std.error, label = signif_diff), 
+                  nudge_y = 0.5,
+                  direction = "x",
+                  vjust = 0,
+                  hjust = 0.5,
+                  segment.colour = "transparent")+
   geom_hline(yintercept = 10, linetype = "dotted")+ #color = "gray"
   theme_classic() +
   facet_wrap(~attribute) +
-  scale_fill_brewer(palette = "Blues")+ #find a good color
-  theme(panel.grid = element_blank(),
+  scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
+  #scale_fill_viridis(discrete = T, option = "D")+
+  #scale_fill_brewer(palette = "BuGn")+ #find a good color
+  #ggtitle ("Small-scale Fisher's Perception variables of social performance outcomes of their associatons")+
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.grid = element_blank(),
         axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         legend.position="bottom", 
-        legend.box = "horizontal") +
+        legend.box = "horizontal")+
   expand_limits(y = 20) #y-axis goes to up to 20
+  
+title_soc_perform <- ggdraw()+draw_label("Perception on social performance variables", fontface='bold')
+
+ 
+soc_perf_legend <- ggdraw(soc_perform_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+
+soc_per_plot_title <- plot_grid(title_soc_perform, soc_perf_legend, ncol=1, rel_heights=c(0.1, 1)) 
 
 
-
-
-
+plot(soc_per_plot_title)
 ```
 
+
+## Motivations
+
+```{r}
+motivations <- read_csv(here::here("data/fishers_motivations.csv")) %>% 
+  gather(key = Gender, value = percentage, 2:3) 
+
+motivations_plot <- ggplot(motivations)+
+  geom_bar(aes(x = Motivation, 
+               y = percentage, 
+               fill=Gender), 
+           stat = "identity",
+           position = "fill")+
+  coord_flip()+
+  scale_y_continuous(labels=scales::percent)+
+  scale_fill_manual(values = c("#4EB3D3", "#7BCCC4"),
+                    label = c("Men (n = 53)", "Women (n = 62)"), "Gender")+
+  ylab("Percentage")+
+  ggtitle("Women and Men's motivations to participate in SSF associations")+
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title = element_text(face = "bold"),
+        axis.text.y =element_text(size = 10))
+
+motivation_legend <- ggdraw(motivations_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+
+
+plot(motivation_legend)
+```
+
+## Motivations by Gender
+```{r}
+motivations_by_gender <- read_csv(here::here("data/motivations_by_gender.csv")) %>% gather(key = gender, value = percentage, 2:3) 
+
+motivations_by_gender_plot <- ggplot(motivations_by_gender)+
+  geom_bar(aes(x = gender, 
+               y = percentage, 
+               fill= motivation), 
+           stat = "identity",
+           position = "fill") +
+  theme_classic() +
+  scale_x_discrete(labels = c("Men (n=122)", "Women (n=166)"))+
+  coord_flip()+
+  scale_y_continuous(labels=scales::percent)+
+  scale_fill_brewer(palette = "GnBu")+
+  labs(fill = "Motivators")+
+  ggtitle("Women and Men's motivations to participate in SSF associations")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        #axis.title = element_text(face = "bold"),
+        axis.text.y =element_text(size = 10),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+motivation_legend <- ggdraw(motivations_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+
+
+plot(motivations_by_gender_plot)
+```
+
+
+
+
+#Others
+```{r echo = FALSE, message= FALSE, warning= FALSE}
+##Activity Men and women
+
+fishers_activity_2016 <- read_csv(here("data/fishers_activity_rpa_2016.csv"))%>%
+  group_by(gender) %>% 
+  mutate(total_gender = sum(number)) %>% 
+  ungroup() %>% 
+  mutate(pct_per_gender = (number/total_gender)*100)
+
+
+fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
+  geom_bar(aes(x= gender, 
+               y= pct_per_gender/100, 
+               fill = Activity),
+           stat = "identity")+
+  theme_classic()+
+  scale_y_continuous(labels=scales::percent)+
+  scale_fill_manual(values = c("#C6DBEF", "#7BCCC4", "#4EB3D3", "#2B8CBE"))+
+  scale_x_discrete(labels=c("Men (n = 121,634)", "Women (n = 29,952)"))+
+  ylab("Percentage of RPA")+
+  ggtitle("Percentage of men and women's registers in each fishery activity")+
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+        axis.title = element_text(face = "bold"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 10, color = "black", face = "bold")) #
+
+fishers_activity_legend <- ggdraw(fishers_activity_16_plot)+
+  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.87, y=0.02)
+
+
+plot(fishers_activity_legend)
+```
 
 

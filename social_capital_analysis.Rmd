@@ -1,0 +1,140 @@
+---
+title: "Social Capital Analysis"
+author: "Camila Vargas"
+date: "5/24/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this document I will analyse all the data collected on how do fisher's in chile percived the support of different relevant agencies related to artisanal fisheries
+
+## Set up
+```{r}
+library(tidyverse)
+library(here)
+library(pgirmess)
+
+```
+
+Import data
+```{r}
+social_capital_raw <- read_csv(here("data/social_capital_raw.csv"))
+
+social_capital <- social_capital_raw %>% 
+  mutate(type_org = ifelse(type_org== 1, "Women", type_org)) %>% 
+  mutate(type_org = ifelse(type_org== 2, "Men", type_org)) %>%
+  mutate(type_org = ifelse(type_org== 3, "Mixed-W", type_org)) %>%
+  mutate(type_org = ifelse(type_org== 4, "Mixed-M", type_org)) %>%
+  mutate(gender = ifelse(type_org== 1, "Women", type_org)) %>% 
+   mutate(gender = ifelse(type_org== 2, "Men", type_org)) %>% 
+  gather(key = "agency", value = "score", 3:15) %>% 
+  mutate(score = as.numeric(score)) %>% 
+  mutate(score= score +10)
+
+social_capital$type_org <- as.factor(social_capital$type_org)
+is.finite(social_capital$score)
+is.finite(social_capital$type_org)
+
+
+```
+
+Assuming data is not normal I will perform a Kruskal wallis test for each of the agencies
+
+```{r}
+
+caleta_cercana <- social_capital %>% 
+  filter(agency== "caletas_cerca")
+
+caleta_cerca_KW <- kruskal.test(score~ type_org, data = caleta_cercana)
+
+#post hoc test
+caletas_cercanas_post <- kruskalmc(caleta_cercana$score, caleta_cercana$type_org)
+
+  
+#"caletas_lejos"
+
+caletas_lejos <- social_capital %>% 
+  filter(agency== "caletas_lejos")
+
+caleta_cerca_KW <- kruskal.test(score~ type_org, data = caletas_lejos)
+#Kruskal-Wallis chi-squared = 2.7723, df = 3, p-value = 0.4281
+#NO DIFF
+
+#"capitania_puerto"
+capitania_puerto <- social_capital %>% 
+  filter(agency== "capitania_puerto")
+
+capitania_puerto_KW <- kruskal.test(score~ type_org, data = capitania_puerto)
+##Kruskal-Wallis chi-squared = 4.3679, df = 3, p-value = 0.2244
+##NO DIFF
+
+#"comunidad"        
+#"condeferacion"    
+#"fap"             
+ #"ffpa"             
+#"marinos"          
+#"municipalidad"   
+#"prodemu"
+#"senapesca"
+#"sernam"          
+#"subpesca" 
+
+
+```
+
+
+Combining all agencies to generate an average of perception of social capital
+
+```{r}
+# social_capital_average <- social_capital %>% 
+#   group_by(type_org, agency) %>% 
+#   summarise(average = mean(score, na.rm = T))
+# 
+# shapiro.test(social_capital_average$average)
+# qqnorm(social_capital_average$average)
+# 
+# anova_average <- aov(average ~ type_org, data = social_capital_average)
+# summary(anova_average)
+# 
+# sco_cap_aver_KW <- kruskal.test(average~ type_org, data = social_capital_average)
+
+
+social_capital_average <- social_capital_raw %>% 
+  select(-prodemu, -sernam) %>% 
+  mutate(type_org = ifelse(type_org== 1, "Women", type_org)) %>% 
+  mutate(type_org = ifelse(type_org== 2, "Men", type_org)) %>%
+  mutate(type_org = ifelse(type_org== 3, "Mixed-W", type_org)) %>%
+  mutate(type_org = ifelse(type_org== 4, "Mixed-M", type_org)) %>%
+  mutate(gender = ifelse(type_org== 1, "Women", type_org)) %>% 
+  mutate(gender = ifelse(type_org== 2, "Men", type_org)) %>% 
+  mutate(soc_capital = as.numeric(average)) %>% 
+  select(folio=Folio, type_org, soc_capital) %>% 
+  mutate(soc_capital= soc_capital+10)
+
+qqnorm(social_capital_average$soc_capital)
+shapiro.test(social_capital_average$soc_capital)
+ 
+anova_average <- aov(soc_capital ~ type_org, data = social_capital_average)
+summary(anova_average)
+
+tuckey <- TukeyHSD(anova_average)
+tuckey
+
+
+social_capital_average$type_org <- as.factor(social_capital_average$type_org)
+is.finite(social_capital_average$soc_capital)
+is.finite(social_capital_average$type_org)
+
+soc_capital_KW <- kruskal.test(soc_capital~ type_org, data = social_capital_average)
+##Kruskal-Wallis chi-squared = 6.7144, df = 3, p-value = 0.08158
+
+write.csv(social_capital_average, here("data/social_capital_average.csv"), row.names = F)
+
+
+```
+
+
+
