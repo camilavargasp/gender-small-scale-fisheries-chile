@@ -1,0 +1,50 @@
+---
+title: "Responses to Reviewers"
+author: "Camila Vargas"
+date: "3/25/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(readxl) 
+library(freeR)
+```
+
+## Read data
+```{r}
+
+## the casv file is the most complete raw data set
+raw_data <- read_csv("data/vargas_gender_data_raw.csv")
+```
+
+
+## Variability within organizations
+
+```{r}
+var_check <- raw_data %>% 
+  select(organization, 15:22) %>% 
+  pivot_longer(cols = 2:9,
+               names_to = "variable",
+               values_to = "value")
+
+
+
+var_check %>% 
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot()+
+  facet_wrap(~organization)
+
+
+```
+
+
+
+
+
+
+
+

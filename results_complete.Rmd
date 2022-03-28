@@ -11,15 +11,21 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(readxl) #install.packages('readxl')
+library(freeR)
 ```
 
 ## Read data
 ```{r}
-social_capital_average <- read_csv(here("data/social_capital_average.csv"))
+#social_capital_average <- read_csv(here("data/social_capital_average.csv"))
 
-raw_data <- read_excel(here("data/vargas_gender_data.xlsx"), range ="A1:AG116") %>%  mutate(activities = as.numeric(activities),
-         conflict = as.numeric(conflict)) %>% 
-  left_join(social_capital_average, by= "folio") ##OJO!! social_capital_average
+raw_data_1 <- read_excel(here("data/vargas_gender_data_raw.xlsx"), range ="A1:AG116")
+
+## Raw data fixed - the raw file contains the average for social capital
+# mutate(activities = as.numeric(activities),
+#          conflict = as.numeric(conflict))
+  #left_join(social_capital_average, by= "folio") ##OJO!! social_capital_average
+
+
 ```
 
 
