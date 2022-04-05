@@ -12,14 +12,54 @@ library(tidyverse)
 library(here)
 library(readxl) 
 library(freeR)
+library(RColorBrewer)
 ```
 
 ## Read data
 ```{r}
 
-## the casv file is the most complete raw data set
+## the csv file is the most complete raw data set
 raw_data <- read_csv("data/vargas_gender_data_raw.csv")
+
+##organization gender composition
+gender_comp <- read_csv("data/org_gender_composition.csv")
 ```
+
+## Plot % of women vs cooperation results
+In addition, with your data, can you plot a figure with the % of women in x axis, and the cooperation variable in y axis? is there a pattern?
+
+```{r}
+## Preparing data
+coop_summary <- raw_data %>% 
+  group_by(organization) %>% 
+  summarise(coop_avg = mean(cooperation)) %>% 
+  ungroup() %>% 
+  left_join(gender_comp, by = "organization") %>% 
+  mutate(prop_wom = (women_participants/tot_participants))
+
+## plot
+
+##colors
+org_cols <- 23
+my_colors <- colorRampPalette(brewer.pal(8, "Set2"))(org_cols)
+my_colors_2 <- colorRampPalette(brewer.pal(12, "Paired"))(org_cols)
+
+
+coop_summary %>% 
+  ggplot() +
+  geom_smooth(method = "lm", se = FALSE,
+              aes(x = prop_wom, y = coop_avg))+
+  geom_point(aes(x = prop_wom, y = coop_avg, color = organization))+
+  geom_text(aes(x = prop_wom, y = coop_avg, label = organization), size = 3, check_overlap = T)+
+  scale_color_manual(values = my_colors_2)+
+  theme_classic(base_size = 18)+
+  scale_x_continuous(labels = scales::percent, name = "Percentage of Women")+
+  scale_y_continuous(breaks = seq(0,20, 2), name = "Cooperation")+
+  theme(legend.position = "none")
+
+```
+
+
 
 
 ## Variability within organizations
