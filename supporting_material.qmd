@@ -1,0 +1,144 @@
+---
+title: "Supplementary Figure: Variance withing Organizations"
+format: html
+execute:
+  echo: false
+  warning: false
+---
+
+## Set up
+
+```{r}
+library(tidyverse)
+library(here)
+library(RColorBrewer)
+library(patchwork)
+```
+
+## Raw data
+
+```{r}
+## the csv file is the most complete raw data set
+raw_data <- read_csv(here::here("data/vargas_gender_data_raw.csv"))
+
+```
+
+## Data Wrangling
+
+```{r}
+var_check <- raw_data %>% 
+  select(organization, type_organization, 15:24) %>% 
+  pivot_longer(cols = 3:12,
+               names_to = "variable",
+               values_to = "value") %>% 
+  filter(variable != "community") %>% 
+  mutate(organization = recode(organization,
+                              "AnahuacMix" = "Anahuac",
+                              "AnahuacWom" = "Anahuac",
+                              "ColiumoMen" = "Coliumo",
+                              "ColiumoWom" = "Coliumo",
+                              "Lo Roja" = "Coronel",
+                              "MauleMen" = "Coronel",
+                              "MauleWomen" = "Coronel",
+                              "PichilemuFar" = "Pichilemu",
+                              "PichilemuMen" = "Pichilemu",
+                              "PichilemuWom" = "Pichilemu"),
+         variable = recode(variable,
+                           "leadership" = "Leadership",
+                           "entrepreneurship" = "Entrepreneurship",
+                           "activities" = "Participation in Activities",
+                           "trust" = "Trust",
+                            "norms" = "Compliance",
+                            "soc_capital" = "Social Capital",
+                            "efficiency" = "Efficiency",
+                           "cooperation" = "Cooperation", 
+                           "conflict" = "Conflict Resolution"))
+
+```
+
+## Figure
+
+```{r}
+
+
+var_check %>%
+  filter(type_organization == "Women") %>%
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("A  Only Women Organizations")+
+  theme(axis.title = element_blank())
+
+var_check %>%
+  filter(type_organization == "Men") %>%
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("B  Only Men Organizations")+
+  theme(axis.text.y=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x=element_blank())
+
+
+var_check %>%
+  filter(type_organization == "MixedW") %>%
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("C  Mixed-W Organizations")+
+  theme( axis.title.y = element_blank(),
+        axis.title.x=element_blank())
+
+
+
+
+var_check %>%
+  filter(type_organization == "MixedM") %>%
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("D  Mixed-M Organizations")+
+  theme(axis.text.y=element_blank(),
+        axis.title.y = element_blank(),
+        axis.title.x=element_blank())
+
+
+# sup_fig <- women_plot/men_plot/mixedW_plot/mixedM_plot
+# 
+# sup_fig
+
+# var_fig <- plot_grid(women_plot,men_plot, mixedW_plot, mixedM_plot, nrow = 4, align = "v", rel_widths = c(1, -0.1, 1))
+
+
+
+```
+
+
+
+## Test
+
+
+::: {layout-nrow=2}
+![](women.png)
+
+![](men.png)
+
+![](mixed-w.png)
+
+![](mixed-m.png)
+:::
+
+
+

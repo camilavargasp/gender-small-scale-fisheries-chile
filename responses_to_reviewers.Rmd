@@ -60,24 +60,73 @@ coop_summary %>%
 ```
 
 
-
-
 ## Variability within organizations
 
 ```{r}
 var_check <- raw_data %>% 
-  select(organization, 15:22) %>% 
-  pivot_longer(cols = 2:9,
+  select(organization, type_organization, 15:22) %>% 
+  pivot_longer(cols = 3:10,
                names_to = "variable",
-               values_to = "value")
+               values_to = "value") %>% 
+  mutate(organization = recode(organization,
+                              "AnahuacMix" = "Anahuac",
+                              "AnahuacWom" = "Anahuac",
+                              "ColiumoMen" = "Coliumo",
+                              "ColiumoWom" = "Coliumo",
+                              "Lo Roja" = "Coronel",
+                              "MauleMen" = "Coronel",
+                              "MauleWomen" = "Coronel",
+                              "PichilemuFar" = "Pichilemu",
+                              "PichilemuMen" = "Pichilemu",
+                              "PichilemuWom" = "Pichilemu"))
 
-
-
-var_check %>% 
+men_plot <- var_check %>% 
+  filter(type_organization == "Men") %>% 
   ggplot(aes(y = value, x = variable))+
-  geom_boxplot()+
-  facet_wrap(~organization)
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("Only Men Organizations")
 
+
+women_plot <- var_check %>% 
+  filter(type_organization == "Women") %>% 
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("Only Women Organizations")
+
+
+mixedW_plot <- var_check %>% 
+  filter(type_organization == "MixedW") %>% 
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("Mixed-W Organizations")
+
+
+mixedM_plot <- var_check %>% 
+  filter(type_organization == "MixedM") %>% 
+  ggplot(aes(y = value, x = variable))+
+  geom_boxplot(fill = "gray")+
+  theme_classic()+
+  coord_flip()+
+  #theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~organization)+
+  ggtitle("Mixed-M Organizations")
+
+
+sup_fig <- women_plot/men_plot/mixedW_plot/mixedM_plot
+
+var_fig <- plot_grid(women_plot,men_plot, mixedW_plot, mixedM_plot, nrow = 4, align = "v", rel_widths = c(1, -0.1, 1))
 
 ```
 

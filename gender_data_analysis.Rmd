@@ -41,7 +41,8 @@ library(here)
 library(readxl)
 library(pgirmess)
 library(dunn.test)
-
+library(plotrix)
+library(ggrepel)
 
 
 library(plotrix)
@@ -74,7 +75,7 @@ gender_raw <- read_csv(here::here("data/vargas_gender_data_raw.csv")) %>%
 
 type_organization <- c("Men", "Women", "MixedW", "MixedM")
 n_assos <- c(25,30,29,31)
-n_assos_type <- data_frame(type_organization, n_assos)
+n_assos_type <- tibble(type_organization, n_assos)
 
 ```
 
@@ -671,7 +672,7 @@ plot(figure_method_title)
 ```
 
 
-###Figure2: Percentage of men and women registers in each fishery activity
+### Figure2: Percentage of men and women registers in each fishery activity
 
 ```{r, licencse under each activity, echo = FALSE, warning=FALSE, message=FALSE, fig.cap= ': Percentage of licenses registered to  men (n= 121,634) and women (n=29,952) subscribed under each small-scale fishery activity. Total number of licenses are higher than number of fishers officially registered because activities are not mutually exclusive. Data source: SERNAPESCA 2016'}
 
@@ -710,8 +711,8 @@ fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
         axis.text.x = element_text(size = 15, color = "black"),
         axis.text.y = element_text(size = 15, color = "black"))
 
-fishers_activity_legend <- ggdraw(fishers_activity_16_plot)+
-  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.87, y=0.02)
+# fishers_activity_legend <- ggdraw(fishers_activity_16_plot)+
+#   draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.87, y=0.02)
 
 
 plot(fishers_activity_16_plot)
@@ -769,7 +770,7 @@ motivations_by_gender_plot <- ggplot(motivations_by_gender)+
                fill= motivation), 
            stat = "identity",
            position = "fill") +
-  theme_classic() +
+  theme_classic(base_size = 16) +
   scale_x_discrete(labels = c("Men (n=122)", "Women (n=166)"))+
   coord_flip()+
   scale_y_continuous(labels=scales::percent)+
@@ -780,15 +781,17 @@ motivations_by_gender_plot <- ggplot(motivations_by_gender)+
   #scale_fill_brewer(palette = "GnBu")+
   labs(fill = "Motivators")+
   ggtitle("Women and Men's motivations to participate in SSF associations")+
-  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
         #axis.title = element_text(face = "bold"),
-        axis.text.y =element_text(size = 20),
+        axis.text.y =element_text(size = 18),
+        axis.text.x =element_text(size = 18),
         axis.title.x = element_blank(),
-        axis.title.y = element_blank())
+        axis.title.y = element_blank(),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
 
-motivation_legend <- ggdraw(motivations_plot)+
-  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
-
+# motivation_legend <- ggdraw(motivations_plot)+
+#   draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
 
 plot(motivations_by_gender_plot)
 
@@ -807,10 +810,18 @@ Fig caption: Results from Kruskal-Wallis test showed significant differences in 
 
 ##calcualting mean, sd and se
 assoc_scale_summary <- gender_raw %>% 
-  select("Type of Association"= type_organization, Leadership = leadership, Entrepreneurship = entrepreneurship, "Participation in Activities" = activities, Trust = trust, "Compliance" = norms, "Social Capital" = soc_cap_mean) %>% 
-  gather(key = attribute, value = value, 2:7) %>% 
+  select("Type of Association"= type_organization, 
+         Leadership = leadership, 
+         Entrepreneurship = entrepreneurship, 
+         "Participation in Activities" = activities, 
+         Trust = trust, 
+         "Compliance" = norms, 
+         "Social Capital" = soc_cap_mean) %>% 
+  pivot_longer(cols = 2:7,
+               names_to = "attribute",
+               values_to = "value") %>% 
   group_by(`Type of Association`, attribute) %>% 
-  group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
+  #mutate(N = n()) %>% ## adds the n for each type of association
   summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
   ungroup() %>% 
   mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)")) %>% 
@@ -819,7 +830,7 @@ assoc_scale_summary <- gender_raw %>%
   mutate(signif_diff = ifelse(`Type of Association` == "Mixed - W (n=29)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "a",signif_diff)) %>% 
   mutate(signif_diff = ifelse(`Type of Association` == "Mixed - M (n=31)" & attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities"), "ab",signif_diff)) %>% 
    mutate("Type of Association" = fct_relevel(`Type of Association`, c("Women (n=30)", "Men (n=25)", "Mixed - W (n=29)", "Mixed - M (n=31)")),
-         attribute = fct_relevel(attribute, c("Leadership", "Entrepreneurship", "Participation in Activities", "Trust", "Norm Compliance", "Social Capital")))
+         attribute = fct_relevel(attribute, c("Leadership", "Entrepreneurship", "Participation in Activities", "Trust", "Compliance", "Social Capital")))
 
   
 View(assoc_scale_summary)
@@ -830,16 +841,24 @@ View(assoc_scale_summary)
 signficant_diff <- ggplot(assoc_scale_summary %>% 
                               filter(attribute %in% c("Leadership", "Entrepreneurship","Participation in Activities")),
                             aes(`Type of Association`, mean)) +
-   geom_bar(aes(fill=`Type of Association`), colour="black", stat = "identity") +
+  geom_bar(aes(fill=`Type of Association`), colour="black", stat = "identity") +
   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
-  geom_text_repel(aes(y=mean+std.error+0.2, label = signif_diff), 
+  geom_text_repel(aes(y=mean+std.error, label = signif_diff), 
                   nudge_y = 0.5,
+                  nudge_x = 0.12,
                   direction = "x",
                   vjust = 0,
                   hjust = 0.5,
                   segment.colour = "transparent")+
+
+    # geom_text_repel(aes(y=mean+sd+0.2, label = signif_diff), 
+  #                 nudge_y = 0.2,
+  #                 direction = "y",
+  #                 vjust = 0.5,
+  #                 hjust = 0.5,
+  #                 segment.colour = "transparent")+
   #geom_hline(yintercept = 10, linetype = "dotted")+ # dotted vrtical line in 10
-  theme_classic() +
+  theme_classic(base_size = 18) +
   facet_wrap(~attribute) +
   scale_fill_manual(values = c("#FFFFFF","#9B9B9B", "#D4D4D4", "#000000"))+
   #scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
@@ -851,13 +870,16 @@ signficant_diff <- ggplot(assoc_scale_summary %>%
         legend.position="none", 
         legend.box = "horizontal")
 
+plot(signficant_diff)
+
 no_diff <- ggplot(assoc_scale_summary %>% 
                               filter(attribute %in% c("Compliance", "Social Capital","Trust")),
   aes(`Type of Association`, mean)) +
    geom_bar(aes(fill=`Type of Association`), colour="black", stat = "identity") +
-  geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
+  #geom_errorbar(aes(ymin = mean - sd, ymax = mean + sd), width=0.2) +
   #geom_hline(yintercept = 10, linetype = "dotted")+
-  theme_classic() +
+  theme_classic(base_size = 18) +
   facet_wrap(~attribute) +
   scale_fill_manual(values = c("#FFFFFF","#9B9B9B", "#D4D4D4", "#000000"))+
   #scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
@@ -874,14 +896,19 @@ no_diff <- ggplot(assoc_scale_summary %>%
 ##Both plot plotted together
 figure_assoc_att <- plot_grid(signficant_diff, no_diff, labels = c("A", "B"), nrow = 2, align = "v")
 
-title_figure_assoc_att <-  ggdraw() + draw_label("Perception on association related variables", fontface='bold')
+## Figure in manuscript
+plot(figure_assoc_att)
 
-figure_assoc_att_legend <- ggdraw(figure_assoc_att)+
-  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
 
-figure_assoc_att_title <- plot_grid(title_figure_assoc_att, figure_assoc_att_legend, ncol=1, rel_heights=c(0.1, 1)) # rel_heights values control title margins
-
-plot(figure_assoc_att_title)
+## Other additions
+# title_figure_assoc_att <-  ggdraw() + draw_label("Perception on association related variables", fontface='bold')
+# 
+# figure_assoc_att_legend <- ggdraw(figure_assoc_att)+
+#   draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+# 
+# figure_assoc_att_title <- plot_grid(title_figure_assoc_att, figure_assoc_att_legend, ncol=1, rel_heights=c(0.1, 1)) # rel_heights values control title margins
+# 
+# plot(figure_assoc_att_title)
 
 
 ```
@@ -898,10 +925,12 @@ Average degree in which groups evaluate social performance indicators: Efficienc
 
 
 soc_perform_summary<- gender_raw %>% 
-  select("Type of Association"= type_organization, Efficiency = efficiency, Cooperation = cooperation, "Conflict Resolution" = conflict) %>% 
-  gather(key = attribute, value = value, 2:4) %>% 
+  select("Type of Association"= type_organization, Efficiency = efficiency, Cooperation = cooperation, "Conflict Resolution" = conflict) %>%
+  pivot_longer(cols = 2:4,
+               names_to = "attribute",
+               values_to = "value") %>% 
   group_by(`Type of Association`, attribute) %>% 
-  group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
+  #group_by(N = n(), add = TRUE) %>% ## adds the n for each type of association
   summarise_all(funs(mean, sd, std.error), na.rm = TRUE) %>% 
   ungroup() %>% 
   mutate( `Type of Association` = recode(`Type of Association`, MixedM = "Mixed - M (n=31)", MixedW = "Mixed - W (n=29)", Men = "Men (n=25)", Women = "Women (n=30)")) %>% 
@@ -921,12 +950,13 @@ soc_perform_plot<- ggplot(soc_perform_summary, aes(`Type of Association`, mean))
   geom_errorbar(aes(ymin = mean - std.error, ymax = mean +std.error), width=0.2) +
   geom_text_repel(aes(y=mean+std.error, label = signif_diff), 
                   nudge_y = 0.5,
+                  nudge_x = 0.12,
                   direction = "x",
                   vjust = 0,
                   hjust = 0.5,
                   segment.colour = "transparent")+
   #geom_hline(yintercept = 10, linetype = "dotted")+ #color = "gray"
-  theme_classic() +
+  theme_classic(base_size = 18) +
   facet_wrap(~attribute) +
   scale_fill_manual(values = c("#FFFFFF","#9B9B9B", "#D4D4D4", "#000000"))+
   #scale_fill_manual(values = c("#7BCCC4", "#4EB3D3", "#2B8CBE", "#C6DBEF"))+
@@ -942,6 +972,10 @@ soc_perform_plot<- ggplot(soc_perform_summary, aes(`Type of Association`, mean))
         legend.box = "horizontal")+
   expand_limits(y = 20) #y-axis goes to up to 20
   
+
+plot(soc_perform_plot)
+
+
 title_soc_perform <- ggdraw()+draw_label("Perception on social performance variables", fontface='bold')
 
  
