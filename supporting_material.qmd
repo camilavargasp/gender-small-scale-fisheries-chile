@@ -59,8 +59,6 @@ var_check <- raw_data %>%
 ## Figure
 
 ```{r}
-
-
 var_check %>%
   filter(type_organization == "Women") %>%
   ggplot(aes(y = value, x = variable))+

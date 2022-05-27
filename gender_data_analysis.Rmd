@@ -705,7 +705,7 @@ fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
   scale_x_discrete(labels=c("Men (n = 121,634)", "Women (n = 29,952)"))+
   ylab("Percentage of RPA")+
   ggtitle("Percentage of male and female's registers by license type")+
-  theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         axis.text.x = element_text(size = 15, color = "black"),
@@ -717,12 +717,13 @@ fishers_activity_16_plot <- ggplot(fishers_activity_2016)+
 
 plot(fishers_activity_16_plot)
 
+ggsave("fig1.tiff", units="in", width=7, height=4, dpi=360)
 
 
 ```
 
 ###Figure 3: Map with locations
-
+See ppt
 
 ##Results
 
@@ -758,7 +759,7 @@ plot(motivations_plot)
 plot(motivation_legend)
 ```
 
-Instead we used:
+**Instead we used:**
 Motivations by Gender
 ```{r}
 motivations_by_gender <- read_csv(here::here("data/motivations_by_gender.csv")) %>% gather(key = gender, value = percentage, 2:3) %>% 
@@ -781,7 +782,7 @@ motivations_by_gender_plot <- ggplot(motivations_by_gender)+
   #scale_fill_brewer(palette = "GnBu")+
   labs(fill = "Motivators")+
   ggtitle("Women and Men's motivations to participate in SSF associations")+
-  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
         #axis.title = element_text(face = "bold"),
         axis.text.y =element_text(size = 18),
         axis.text.x =element_text(size = 18),
@@ -795,7 +796,8 @@ motivations_by_gender_plot <- ggplot(motivations_by_gender)+
 
 plot(motivations_by_gender_plot)
 
-ggsave("motivations_figure.png", plot = last_plot())
+ggsave("fig4.tiff", units="in", width=10, height=4, dpi=360)
+
 ```
 
 
@@ -872,6 +874,7 @@ signficant_diff <- ggplot(assoc_scale_summary %>%
 
 plot(signficant_diff)
 
+
 no_diff <- ggplot(assoc_scale_summary %>% 
                               filter(attribute %in% c("Compliance", "Social Capital","Trust")),
   aes(`Type of Association`, mean)) +
@@ -898,6 +901,8 @@ figure_assoc_att <- plot_grid(signficant_diff, no_diff, labels = c("A", "B"), nr
 
 ## Figure in manuscript
 plot(figure_assoc_att)
+
+ggsave("fig5.tiff", units="in", width=10, height=7, dpi=360)
 
 
 ## Other additions
@@ -974,18 +979,19 @@ soc_perform_plot<- ggplot(soc_perform_summary, aes(`Type of Association`, mean))
   
 
 plot(soc_perform_plot)
+ggsave("fig6.tiff", units="in", width=10, height= 4, dpi=360)
 
 
-title_soc_perform <- ggdraw()+draw_label("Perception on social performance variables", fontface='bold')
-
- 
-soc_perf_legend <- ggdraw(soc_perform_plot)+
-  draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
-
-soc_per_plot_title <- plot_grid(title_soc_perform, soc_perf_legend, ncol=1, rel_heights=c(0.1, 1)) 
-
-
-plot(soc_per_plot_title)
+# title_soc_perform <- ggdraw()+draw_label("Perception on social performance variables", fontface='bold')
+# 
+#  
+# soc_perf_legend <- ggdraw(soc_perform_plot)+
+#   draw_label("Vargas et al, unpublished data", size = 9, fontface = "italic", x=0.9, y=0.02)
+# 
+# soc_per_plot_title <- plot_grid(title_soc_perform, soc_perf_legend, ncol=1, rel_heights=c(0.1, 1)) 
+# 
+# 
+# plot(soc_per_plot_title)
 ```
 
 
